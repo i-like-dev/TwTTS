@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>簡約 TTS 播放器</title>
+  <title>TW TTS</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -45,22 +45,49 @@
   <div class="container">
     <input type="text" id="textInput" placeholder="請輸入文字">
     <button id="playBtn">播放</button>
-    <!-- 用 audio 標籤來播放音檔 -->
+    <!-- 用於播放音檔的 audio 標籤 -->
     <audio id="audio" style="display:none;"></audio>
   </div>
   
   <script>
-    document.getElementById('playBtn').addEventListener('click', function(){
-      var text = document.getElementById('textInput').value.trim();
-      if(text === '') return; // 若無輸入則不執行
+    const audio = document.getElementById('audio');
+    const playBtn = document.getElementById('playBtn');
+    const textInput = document.getElementById('textInput');
+    
+    // 播放序列的狀態: 'intro' (前奏), 'tts' (TTS 語音), 'outro' (後奏)
+    let playbackState = '';
+    let ttsUrl = '';
+    
+    // 當目前播放的音檔播放結束時，根據狀態決定下一段播放
+    audio.addEventListener('ended', () => {
+      if (playbackState === 'intro') {
+        // 前奏結束後播放 TTS 語音
+        playbackState = 'tts';
+        audio.src = ttsUrl;
+        audio.play().catch(err => console.error('TTS 播放失敗:', err));
+      } else if (playbackState === 'tts') {
+        // TTS 語音結束後播放後奏
+        playbackState = 'outro';
+        audio.src = 'outro.mp3';  // 替換成你上傳的後奏 mp3 路徑
+        audio.play().catch(err => console.error('後奏播放失敗:', err));
+      } else if (playbackState === 'outro') {
+        // 播放序列結束，重置狀態
+        playbackState = '';
+      }
+    });
+    
+    playBtn.addEventListener('click', () => {
+      const text = textInput.value.trim();
+      if (!text) return;  // 若無輸入文字則不執行
       
-      // 將使用者輸入的文字 encode 成 URL 安全格式，並替換到 q 參數中
-      var url = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&q=' + encodeURIComponent(text) + '&tl=zh-TW';
+      // 產生 TTS 語音的 URL（若遇到 CORS 問題，可考慮使用代理伺服器）
+      ttsUrl = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&q=' 
+               + encodeURIComponent(text) + '&tl=zh-TW';
       
-      // 指定 audio 標籤的 src 為該 URL，並播放
-      var audio = document.getElementById('audio');
-      audio.src = url;
-      audio.play();
+      // 開始播放序列：先播放前奏
+      playbackState = 'intro';
+      audio.src = 'intro.mp3';  // 替換成你上傳的前奏 mp3 路徑
+      audio.play().catch(err => console.error('前奏播放失敗:', err));
     });
   </script>
 </body>
