@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TW TTS</title>
+  <title>TWTTS</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -45,48 +45,49 @@
   <div class="container">
     <input type="text" id="textInput" placeholder="請輸入文字">
     <button id="playBtn">播放</button>
-    <!-- 用於播放音檔的 audio 標籤 -->
+    <!-- audio 標籤只用來播放前奏與後奏 -->
     <audio id="audio" style="display:none;"></audio>
   </div>
   
   <script>
-    const audio = document.getElementById('audio');
     const playBtn = document.getElementById('playBtn');
     const textInput = document.getElementById('textInput');
+    const audio = document.getElementById('audio');
     
-    // 播放序列的狀態: 'intro' (前奏), 'tts' (TTS 語音), 'outro' (後奏)
-    let playbackState = '';
-    let ttsUrl = '';
-    
-    // 當目前播放的音檔播放結束時，根據狀態決定下一段播放
+    // 記錄目前的播放階段：'intro' (前奏)、'tts' (語音合成)、'outro' (後奏)
+    let currentStage = '';
+
+    // 當前奏或後奏播放完畢時觸發
     audio.addEventListener('ended', () => {
-      if (playbackState === 'intro') {
-        // 前奏結束後播放 TTS 語音
-        playbackState = 'tts';
-        audio.src = ttsUrl;
-        audio.play().catch(err => console.error('TTS 播放失敗:', err));
-      } else if (playbackState === 'tts') {
-        // TTS 語音結束後播放後奏
-        playbackState = 'outro';
-        audio.src = 'outro.mp3';  // 替換成你上傳的後奏 mp3 路徑
-        audio.play().catch(err => console.error('後奏播放失敗:', err));
-      } else if (playbackState === 'outro') {
-        // 播放序列結束，重置狀態
-        playbackState = '';
+      if (currentStage === 'intro') {
+        // 前奏結束，開始語音合成播放 TTS
+        currentStage = 'tts';
+        const text = textInput.value.trim();
+        if (!text) return;
+        
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'zh-TW';
+        // 語音合成結束後播放後奏
+        utterance.onend = () => {
+          currentStage = 'outro';
+          audio.src = 'outro.mp3';  // 請替換成你的後奏 mp3 路徑
+          audio.play().catch(err => console.error('後奏播放失敗:', err));
+        };
+        speechSynthesis.speak(utterance);
+      } else if (currentStage === 'outro') {
+        // 後奏結束，重置播放狀態
+        currentStage = '';
+        playBtn.disabled = false;
       }
     });
     
     playBtn.addEventListener('click', () => {
       const text = textInput.value.trim();
-      if (!text) return;  // 若無輸入文字則不執行
+      if (!text) return;
       
-      // 產生 TTS 語音的 URL（若遇到 CORS 問題，可考慮使用代理伺服器）
-      ttsUrl = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&q=' 
-               + encodeURIComponent(text) + '&tl=zh-TW';
-      
-      // 開始播放序列：先播放前奏
-      playbackState = 'intro';
-      audio.src = 'intro.mp3';  // 替換成你上傳的前奏 mp3 路徑
+      playBtn.disabled = true;  // 避免重複點擊
+      currentStage = 'intro';
+      audio.src = 'intro.mp3';  // 請替換成你的前奏 mp3 路徑
       audio.play().catch(err => console.error('前奏播放失敗:', err));
     });
   </script>
