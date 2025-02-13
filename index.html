@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>簡約 TTS 播放器</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: #fff;
+      padding: 20px 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    input[type="text"] {
+      width: 200px;
+      padding: 10px;
+      margin-right: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      padding: 10px 20px;
+      border: none;
+      background: #007BFF;
+      color: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <input type="text" id="textInput" placeholder="請輸入文字">
+    <button id="playBtn">播放</button>
+    <!-- 用 audio 標籤來播放音檔 -->
+    <audio id="audio" style="display:none;"></audio>
+  </div>
+  
+  <script>
+    document.getElementById('playBtn').addEventListener('click', function(){
+      var text = document.getElementById('textInput').value.trim();
+      if(text === '') return; // 若無輸入則不執行
+      
+      // 將使用者輸入的文字 encode 成 URL 安全格式，並替換到 q 參數中
+      var url = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&q=' + encodeURIComponent(text) + '&tl=zh-TW';
+      
+      // 指定 audio 標籤的 src 為該 URL，並播放
+      var audio = document.getElementById('audio');
+      audio.src = url;
+      audio.play();
+    });
+  </script>
+</body>
+</html>
