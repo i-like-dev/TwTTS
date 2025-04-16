@@ -68,7 +68,7 @@
       audio.play().catch(err => console.error('前奏播放失敗:', err));
     }
 
-    // 語音播放流程
+    // intro / tts / outro 語音播放流程
     audio.addEventListener('ended', () => {
       if (currentStage === 'intro') {
         currentStage = 'tts';
@@ -97,14 +97,23 @@
       playTTSFlow(text);
     });
 
-    // 檢查 URL 中是否有 ?t= 參數
+    // 支援按 Enter 播放
+    textInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const text = textInput.value.trim();
+        playTTSFlow(text);
+      }
+    });
+
+    // 自動從網址讀取 ?t=xxx 並填入框中（但不自動播放）
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
       const tParam = urlParams.get('t');
       if (tParam) {
         const decodedText = decodeURIComponent(tParam);
         textInput.value = decodedText;
-        playTTSFlow(decodedText);
+        // 不自動播，讓使用者按 Enter 或按鈕手動播放
       }
     });
   </script>
