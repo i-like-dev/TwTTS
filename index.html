@@ -42,14 +42,15 @@
   </style>
 </head>
 <body>
-  <h2>TWTTS 語音廣播系統</h2></p></p>
-  </p></p><div class="container">
+  <h2>TWTTS 語音廣播系統</h2>
+  <div class="container">
     <input type="text" id="textInput" placeholder="請輸入文字">
     <button id="playBtn">播放</button>
     <p>© 2024-2025 台灣 i-like-dev 版權所有，請勿侵權！</p>
-    <P>台灣 i-like-dev 授權 Walking Cat 使用。 </P>
+    <p>台灣 i-like-dev 授權 Walking Cat 使用。</p>
     <address style="background:#ff0;">
-  Contect Us:taiwan@walking-cat.com 小編 收</address>
+      Contect Us: taiwan@walking-cat.com 小編 收
+    </address>
     <audio id="audio" style="display:none;"></audio>
   </div>
   
@@ -60,37 +61,46 @@
     
     let currentStage = '';
 
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name) || '';
+    }
+
+    function startPlayback() {
+      const text = textInput.value.trim();
+      if (!text) return;
+      currentStage = 'intro';
+      playBtn.disabled = true;
+      audio.src = 'intro.mp3';
+      audio.play().catch(err => console.error('前奏播放失敗:', err));
+    }
+
     audio.addEventListener('ended', () => {
+      const text = textInput.value.trim();
       if (currentStage === 'intro') {
         currentStage = 'tts';
-        const text = textInput.value.trim();
-        if (!text) return;
-        
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'zh-TW';
-        utterance.rate = 0.8; // 設定語速 (1.0為正常速度，0.8為較慢)
-        
-        utterance.onend = () => {
-          currentStage = 'outro';
-          audio.src = 'outro.mp3';
-          audio.play().catch(err => console.error('後奏播放失敗:', err));
-        };
-
-        speechSynthesis.speak(utterance);
+        const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&q=${encodeURIComponent(text)}&tl=zh-TW`;
+        audio.src = ttsUrl;
+        audio.play().catch(err => console.error('TTS 播放失敗:', err));
+      } else if (currentStage === 'tts') {
+        currentStage = 'outro';
+        audio.src = 'outro.mp3';
+        audio.play().catch(err => console.error('後奏播放失敗:', err));
       } else if (currentStage === 'outro') {
         currentStage = '';
         playBtn.disabled = false;
       }
     });
-    
-    playBtn.addEventListener('click', () => {
-      const text = textInput.value.trim();
-      if (!text) return;
-      
-      playBtn.disabled = true;
-      currentStage = 'intro';
-      audio.src = 'intro.mp3';
-      audio.play().catch(err => console.error('前奏播放失敗:', err));
+
+    playBtn.addEventListener('click', startPlayback);
+
+    // 自動從網址播放
+    window.addEventListener('DOMContentLoaded', () => {
+      const textFromUrl = getQueryParam('t');
+      if (textFromUrl) {
+        textInput.value = decodeURIComponent(textFromUrl);
+        setTimeout(startPlayback, 500); // 確保 DOM 加載完成
+      }
     });
   </script>
 </body>
