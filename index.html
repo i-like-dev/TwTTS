@@ -53,53 +53,58 @@
     </address>
     <audio id="audio" style="display:none;"></audio>
   </div>
-  
+
   <script>
     const playBtn = document.getElementById('playBtn');
     const textInput = document.getElementById('textInput');
     const audio = document.getElementById('audio');
-    
     let currentStage = '';
 
-    function getQueryParam(name) {
-      const params = new URLSearchParams(window.location.search);
-      return params.get(name) || '';
-    }
-
-    function startPlayback() {
-      const text = textInput.value.trim();
+    function playTTSFlow(text) {
       if (!text) return;
-      currentStage = 'intro';
       playBtn.disabled = true;
+      currentStage = 'intro';
       audio.src = 'intro.mp3';
       audio.play().catch(err => console.error('前奏播放失敗:', err));
     }
 
+    // 語音播放流程
     audio.addEventListener('ended', () => {
-      const text = textInput.value.trim();
       if (currentStage === 'intro') {
         currentStage = 'tts';
-        const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&q=${encodeURIComponent(text)}&tl=zh-TW`;
-        audio.src = ttsUrl;
-        audio.play().catch(err => console.error('TTS 播放失敗:', err));
-      } else if (currentStage === 'tts') {
-        currentStage = 'outro';
-        audio.src = 'outro.mp3';
-        audio.play().catch(err => console.error('後奏播放失敗:', err));
+        const text = textInput.value.trim();
+        if (!text) return;
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'zh-TW';
+        utterance.rate = 0.8;
+
+        utterance.onend = () => {
+          currentStage = 'outro';
+          audio.src = 'outro.mp3';
+          audio.play().catch(err => console.error('後奏播放失敗:', err));
+        };
+
+        speechSynthesis.speak(utterance);
       } else if (currentStage === 'outro') {
         currentStage = '';
         playBtn.disabled = false;
       }
     });
 
-    playBtn.addEventListener('click', startPlayback);
+    playBtn.addEventListener('click', () => {
+      const text = textInput.value.trim();
+      playTTSFlow(text);
+    });
 
-    // 自動從網址播放
+    // 檢查 URL 中是否有 ?t= 參數
     window.addEventListener('DOMContentLoaded', () => {
-      const textFromUrl = getQueryParam('t');
-      if (textFromUrl) {
-        textInput.value = decodeURIComponent(textFromUrl);
-        setTimeout(startPlayback, 500); // 確保 DOM 加載完成
+      const urlParams = new URLSearchParams(window.location.search);
+      const tParam = urlParams.get('t');
+      if (tParam) {
+        const decodedText = decodeURIComponent(tParam);
+        textInput.value = decodedText;
+        playTTSFlow(decodedText);
       }
     });
   </script>
