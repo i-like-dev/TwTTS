@@ -83,13 +83,21 @@
     const audio = document.getElementById('audio');
     let currentStage = '';
     let voices = [];
-    let siriVoice = null;
+    let googleVoice = null;
 
     // 載入可用語音 🔍
     function loadVoices() {
       voices = speechSynthesis.getVoices();
-      siriVoice = voices.find(v => v.name.toLowerCase().includes("siri"));
-      if (!siriVoice) siriVoice = voices.find(v => v.lang === "zh-TW") || voices[0];
+      // 優先找 Google 中文
+      googleVoice = voices.find(v => 
+        v.name.toLowerCase().includes("google") && 
+        (v.lang === "zh-TW" || v.lang === "zh-CN")
+      );
+      // fallback zh-TW
+      if (!googleVoice) googleVoice = voices.find(v => v.lang === "zh-TW");
+      // 再 fallback 第一個
+      if (!googleVoice) googleVoice = voices[0];
+      console.log("🎤 已選用語音:", googleVoice ? googleVoice.name : "無");
     }
     speechSynthesis.onvoiceschanged = loadVoices;
 
@@ -102,7 +110,7 @@
       audio.play().catch(err => console.warn('⚠️ intro 播放失敗:', err));
     }
 
-    // intro → tts → outro 🎼
+    // intro → TTS → outro 🎼
     audio.addEventListener('ended', () => {
       if (currentStage === 'intro') {
         currentStage = 'tts';
@@ -110,9 +118,9 @@
         if (!text) return;
 
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'zh-TW';
+        utterance.lang = "zh-TW";
         utterance.rate = 1.0;
-        if (siriVoice) utterance.voice = siriVoice;
+        if (googleVoice) utterance.voice = googleVoice;
 
         utterance.onend = () => {
           currentStage = 'outro';
@@ -136,8 +144,6 @@
     // 快捷鍵播放（「·」） ⌨️
     document.addEventListener('keydown', (e) => {
       const text = textInput.value.trim();
-
-      // 半形中點 (· U+00B7) 或全形中點 (．U+FF0E)
       if (e.key === "·" || e.key === "．") {
         e.preventDefault();
         playTTSFlow(text);
