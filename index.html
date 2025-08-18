@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TWTTS 語音廣播系統</title>
+  <title>🎤 TWTTS 語音廣播系統</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f0f0f0;
+      font-family: "SF Pro Text", Arial, sans-serif;
+      background: linear-gradient(135deg, #e0f7fa, #f9f9f9);
       display: flex;
       justify-content: center;
       align-items: center;
@@ -16,41 +16,64 @@
     }
     .container {
       background: #fff;
-      padding: 20px 30px;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      padding: 30px 40px;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
       text-align: center;
+      max-width: 420px;
+      width: 90%;
+    }
+    h2 {
+      margin-bottom: 20px;
+      font-weight: 700;
+      color: #333;
     }
     input[type="text"] {
-      width: 200px;
-      padding: 10px;
-      margin-right: 10px;
+      width: 85%;
+      padding: 12px;
+      margin: 10px 0;
       border: 1px solid #ccc;
-      border-radius: 4px;
+      border-radius: 12px;
+      font-size: 16px;
+      transition: all 0.3s;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #007aff;
+      box-shadow: 0 0 6px rgba(0,122,255,0.4);
     }
     button {
-      padding: 10px 20px;
+      padding: 12px 28px;
+      margin-top: 12px;
       border: none;
-      background: #007BFF;
+      background: linear-gradient(135deg, #007aff, #0056d8);
       color: #fff;
-      border-radius: 4px;
+      border-radius: 30px;
       cursor: pointer;
+      font-size: 18px;
+      font-weight: 600;
+      transition: all 0.3s;
     }
     button:hover {
-      background: #0056b3;
+      background: linear-gradient(135deg, #0056d8, #003e99);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+    }
+    address, p {
+      font-size: 13px;
+      color: #666;
+      margin-top: 12px;
     }
   </style>
 </head>
 <body>
-  <h2>TWTTS 語音廣播系統</h2>
   <div class="container">
-    <input type="text" id="textInput" placeholder="請輸入文字">
-    <button id="playBtn">播放</button>
-    <p>© 2024-2025 台灣 i-like-dev 版權所有，請勿侵權！</p>
-    <p>台灣 i-like-dev 授權 Walking Cat 使用。</p>
-    <address style="background:#ff0;">
-      Contect Us: taiwan@walking-cat.com 小編 收
-    </address>
+    <h2>🎤 TWTTS 語音廣播系統 🔊</h2>
+    <input type="text" id="textInput" placeholder="📝 輸入文字，按 · 播放 🎧">
+    <br>
+    <button id="playBtn">▶️ 播放</button>
+    <p>© 2024-2025 台灣 i-like-dev<br>授權 Walking Cat 使用 😺</p>
+    <address>📧 Contect Us: taiwan@walking-cat.com 小編 收</address>
     <audio id="audio" style="display:none;"></audio>
   </div>
 
@@ -59,16 +82,27 @@
     const textInput = document.getElementById('textInput');
     const audio = document.getElementById('audio');
     let currentStage = '';
+    let voices = [];
+    let siriVoice = null;
 
+    // 載入可用語音 🔍
+    function loadVoices() {
+      voices = speechSynthesis.getVoices();
+      siriVoice = voices.find(v => v.name.toLowerCase().includes("siri"));
+      if (!siriVoice) siriVoice = voices.find(v => v.lang === "zh-TW") || voices[0];
+    }
+    speechSynthesis.onvoiceschanged = loadVoices;
+
+    // 主播放流程 🎶
     function playTTSFlow(text) {
       if (!text) return;
       playBtn.disabled = true;
       currentStage = 'intro';
       audio.src = 'intro.mp3';
-      audio.play().catch(err => console.error('前奏播放失敗:', err));
+      audio.play().catch(err => console.warn('⚠️ intro 播放失敗:', err));
     }
 
-    // intro / tts / outro 語音播放流程
+    // intro → tts → outro 🎼
     audio.addEventListener('ended', () => {
       if (currentStage === 'intro') {
         currentStage = 'tts';
@@ -77,12 +111,13 @@
 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'zh-TW';
-        utterance.rate = 0.8;
+        utterance.rate = 1.0;
+        if (siriVoice) utterance.voice = siriVoice;
 
         utterance.onend = () => {
           currentStage = 'outro';
           audio.src = 'outro.mp3';
-          audio.play().catch(err => console.error('後奏播放失敗:', err));
+          audio.play().catch(err => console.warn('⚠️ outro 播放失敗:', err));
         };
 
         speechSynthesis.speak(utterance);
@@ -92,29 +127,29 @@
       }
     });
 
+    // 按鈕播放 🖱️
     playBtn.addEventListener('click', () => {
       const text = textInput.value.trim();
       playTTSFlow(text);
     });
 
-    // 支援按 Enter 播放
-    textInput.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowUp') {
+    // 快捷鍵播放（「·」） ⌨️
+    document.addEventListener('keydown', (e) => {
+      const text = textInput.value.trim();
+
+      // 半形中點 (· U+00B7) 或全形中點 (．U+FF0E)
+      if (e.key === "·" || e.key === "．") {
         e.preventDefault();
-        const text = textInput.value.trim();
         playTTSFlow(text);
       }
     });
 
-    // 自動從網址讀取 ?t=xxx 並填入框中（但不自動播放）
+    // 網址參數帶入 🛠️
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
       const tParam = urlParams.get('t');
-      if (tParam) {
-        const decodedText = decodeURIComponent(tParam);
-        textInput.value = decodedText;
-        // 不自動播，讓使用者按 Enter 或按鈕手動播放
-      }
+      if (tParam) textInput.value = decodeURIComponent(tParam);
+      loadVoices();
     });
   </script>
 </body>
